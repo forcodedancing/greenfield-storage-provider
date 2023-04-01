@@ -1,133 +1,104 @@
 package receiver
 
 import (
+	"bytes"
 	"context"
 	"io"
 
 	"github.com/bnb-chain/greenfield-common/go/hash"
+	"github.com/bnb-chain/greenfield-storage-provider/model/piecestore"
+	"github.com/bnb-chain/greenfield-storage-provider/pkg/rcmgr"
+	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 
 	merrors "github.com/bnb-chain/greenfield-storage-provider/model/errors"
 	"github.com/bnb-chain/greenfield-storage-provider/pkg/log"
-	payloadstream "github.com/bnb-chain/greenfield-storage-provider/pkg/stream"
 	"github.com/bnb-chain/greenfield-storage-provider/service/receiver/types"
-	servicetypes "github.com/bnb-chain/greenfield-storage-provider/service/types"
-	"github.com/bnb-chain/greenfield-storage-provider/store/sqldb"
 )
 
 var _ types.ReceiverServiceServer = &Receiver{}
 
-// SyncObject an object payload to storage provider.
-func (receiver *Receiver) SyncObject(stream types.ReceiverService_SyncObjectServer) (err error) {
+// ReceivePiece receives a piece data and store it into piece store.
+func (receiver *Receiver) ReceivePiece(stream types.ReceiverService_ReceivePieceServer) error {
 	var (
-		resp          types.SyncObjectResponse
-		pstream       = payloadstream.NewAsyncPayloadStream()
-		traceInfo     = &servicetypes.SegmentInfo{}
-		checksum      [][]byte
-		integrityMeta = &sqldb.IntegrityMeta{}
-		errCh         = make(chan error, 10)
+		init   = true
+		req    *types.ReceivePieceRequest
+		object *storagetypes.ObjectInfo
+		ctx    context.Context
+		data   []byte
 	)
-
-	defer func(resp *types.SyncObjectResponse, err error) {
-		if err != nil {
-			log.Errorw("failed to replicate payload", "error", err)
-			return
-		}
-		if resp.IntegrityHash, resp.Signature, err = receiver.signer.SignIntegrityHash(context.Background(),
-			integrityMeta.ObjectID, checksum); err != nil {
-			log.Errorw("failed to sign integrity hash", "error", err)
-			return
-		}
-		integrityMeta.Checksum = checksum
-		integrityMeta.IntegrityHash = resp.IntegrityHash
-		integrityMeta.Signature = resp.Signature
-		if err = receiver.spDB.SetObjectIntegrity(integrityMeta); err != nil {
-			log.Errorw("failed to write integrity hash to db", "error", err)
-			return
-		}
-		traceInfo.IntegrityHash = resp.IntegrityHash
-		traceInfo.Signature = resp.Signature
-		receiver.cache.Add(traceInfo.ObjectInfo.Id.Uint64(), traceInfo)
-		if err = stream.SendAndClose(resp); err != nil {
-			log.Errorw("failed to send and close stream", "error", err)
-			return
-		}
-		pstream.Close()
-		log.Infow("succeed to replicate payload", "response", resp)
-	}(&resp, err)
-
-	// TODO:: add flow control, syncing one object request cost 4 parallel goroutine at least
-
-	// read payload from gRPC
-	go func() {
-		init := true
-		for {
-			req, err := stream.Recv()
-			if err == io.EOF {
-				pstream.StreamClose()
-				return
-			}
-			if err != nil {
-				log.Debugw("receive payload exception", "error", err)
-				pstream.StreamCloseWithError(err)
-				errCh <- err
-				return
-			}
-			if init {
-				pstream.InitAsyncPayloadStream(
-					req.GetObjectInfo().Id.Uint64(),
-					req.GetReplicaIdx(),
-					req.GetSegmentSize(),
-					req.GetObjectInfo().GetRedundancyType())
-				integrityMeta.ObjectID = req.GetObjectInfo().Id.Uint64()
-				traceInfo.ObjectInfo = req.GetObjectInfo()
-				receiver.cache.Add(req.GetObjectInfo().Id.Uint64(), traceInfo)
-				init = false
-			}
-
-			pstream.StreamWrite(req.GetReplicaData())
-		}
+	scope, err := receiver.rcScope.BeginSpan()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		scope.Done()
 	}()
 
-	// read payload from stream, the payload is spilt to segment size
 	for {
-		select {
-		case entry := <-pstream.AsyncStreamRead():
-			log.Debugw("read segment from stream", "segment_key", entry.Key(), "error", entry.Error())
-			if entry.Error() == io.EOF {
-				errCh <- nil
-				return
-			}
-			if entry.Error() != nil {
-				errCh <- entry.Error()
-				return
-			}
-			checksum = append(checksum, hash.GenerateChecksum(entry.Data()))
-			traceInfo.Checksum = checksum
-			traceInfo.Completed++
-			receiver.cache.Add(entry.ID(), traceInfo)
-			go func() {
-				if err := receiver.pieceStore.PutSegment(entry.Key(), entry.Data()); err != nil {
-					errCh <- err
-				}
-			}()
-		case err = <-errCh:
-			return
+		req, err = stream.Recv()
+		if err == io.EOF {
+			break
 		}
+		if err != nil {
+			log.Debugw("receive payload exception", "error", err)
+			return err
+		}
+		if init {
+			init = false
+			object = req.GetObjectInfo()
+			if object == nil {
+				log.Errorw("object pointer dangling")
+				return merrors.ErrDanglingPointer
+			}
+			ctx = log.WithValue(ctx, "object_id", object.Id.String())
+		}
+		err = scope.ReserveMemory(len(req.GetPieceData()), rcmgr.ReservationPriorityAlways)
+		if err != nil {
+			log.CtxErrorw(ctx, "failed to reserve memory", "error", err)
+			return err
+		}
+		data = append(data, req.GetPieceData()...)
 	}
+	checksum := hash.GenerateChecksum(data)
+	// TODO:: write SPDB, key is objectID, segmentIdx, replicateIdx
+	if !bytes.Equal(checksum, req.GetChecksum()) {
+		return merrors.ErrChecksumMismatch
+	}
+	log.CtxDebugw(ctx, "succeed to receive piece data", "segment_idx", req.GetSegmentIdx(),
+		"replicate_idx", req.GetReplicateIdx())
+	return nil
 }
 
-// QuerySyncingObject query a syncing object info by object id.
-func (receiver *Receiver) QuerySyncingObject(ctx context.Context, req *types.QuerySyncingObjectRequest) (
-	resp *types.QuerySyncingObjectResponse, err error) {
-	ctx = log.Context(ctx, req)
-	objectID := req.GetObjectId()
-	log.CtxDebugw(ctx, "query syncing object", "objectID", objectID)
-	cached, ok := receiver.cache.Get(objectID)
-	if !ok {
-		err = merrors.ErrCacheMiss
-		return
+// DoneReplicate returns the integrity hash of all pieces and the signature of signing the integrity hash
+func (receiver *Receiver) DoneReplicate(ctx context.Context, req *types.DoneReplicateRequest) (
+	*types.DoneReplicateResponse, error) {
+	var (
+		// TODO:: get all pieces checksums from SPDB by order
+		checksums  [][]byte
+		replicates int
+		object     = req.GetObjectInfo()
+		resp       = &types.DoneReplicateResponse{}
+	)
+	if object == nil {
+		log.Errorw("object pointer dangling")
+		return resp, merrors.ErrDanglingPointer
 	}
-	resp = &types.QuerySyncingObjectResponse{}
-	resp.SegmentInfo = cached.(*servicetypes.SegmentInfo)
-	return
+	ctx = log.WithValue(ctx, "object_id", object.Id.String())
+	params, err := receiver.spDB.GetStorageParams()
+	if err != nil {
+		log.CtxErrorw(ctx, "failed to get storage params from db", "error", err)
+		return resp, err
+	}
+	replicates = int(piecestore.ComputeSegmentCount(object.GetPayloadSize(), params.GetMaxSegmentSize()))
+	if replicates != len(checksums) {
+		return resp, merrors.ErrPieceCntMismatch
+	}
+	integrityHash, signature, err := receiver.signer.SignIntegrityHash(ctx, object.Id.Uint64(), checksums)
+	if err != nil {
+		log.CtxErrorw(ctx, "failed to sign integrity hash", "error", err)
+		return resp, err
+	}
+	resp.IntegrityHash = integrityHash
+	resp.Signature = signature
+	return resp, nil
 }

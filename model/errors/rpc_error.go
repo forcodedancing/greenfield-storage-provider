@@ -26,6 +26,8 @@ var (
 	ErrDanglingPointer = errors.New("pointer dangling")
 	//ErrUnsupportedRedundancyType defines the unspported redundancy type error
 	ErrUnsupportedRedundancyType = errors.New("unsupported redundancy type")
+	// ErrChecksumMismatch defines the checksum mismatch error
+	ErrChecksumMismatch = errors.New("checksum mismatch")
 )
 
 // piece store errors
@@ -106,6 +108,12 @@ var (
 	ErrDanglingSP = errors.New("sp pointer sp dangling")
 	// ErrDepletedSP defines no backup SP to pick up error
 	ErrDepletedSP = errors.New("backup storage providers depleted")
+)
+
+// receiver service error
+var (
+	// ErrPieceCntMismatch defines the piece count mismatch error
+	ErrPieceCntMismatch = errors.New("piece count mismatch")
 )
 
 // InnerErrorToGRPCError convents inner error to grpc/status error

@@ -2,7 +2,6 @@ syntax = "proto3";
 package service.tasknode.types;
 
 import "greenfield/storage/types.proto";
-import "service/types/storage_provider.proto";
 
 option go_package = "github.com/bnb-chain/greenfield-storage-provider/service/tasknode/types";
 

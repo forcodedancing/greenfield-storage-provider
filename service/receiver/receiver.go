@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/bnb-chain/greenfield-storage-provider/pkg/rcmgr"
 	lru "github.com/hashicorp/golang-lru"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -27,6 +28,7 @@ var _ lifecycle.Service = &Receiver{}
 type Receiver struct {
 	config     *ReceiverConfig
 	cache      *lru.Cache
+	rcScope    rcmgr.ResourceScope
 	signer     *signerclient.SignerClient
 	pieceStore *psclient.StoreClient
 	spDB       sqldb.SPDB
@@ -37,6 +39,10 @@ type Receiver struct {
 func NewReceiverService(config *ReceiverConfig) (*Receiver, error) {
 	cache, _ := lru.New(model.LruCacheLimit)
 	pieceStore, err := psclient.NewStoreClient(config.PieceStoreConfig)
+	if err != nil {
+		return nil, err
+	}
+	scope, err := rcmgr.ResrcManager().OpenService(model.ReceiverService)
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +57,7 @@ func NewReceiverService(config *ReceiverConfig) (*Receiver, error) {
 	s := &Receiver{
 		config:     config,
 		cache:      cache,
+		rcScope:    scope,
 		pieceStore: pieceStore,
 		spDB:       spDB,
 		signer:     signer,

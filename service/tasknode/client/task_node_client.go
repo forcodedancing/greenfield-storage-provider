@@ -9,7 +9,6 @@ import (
 	"github.com/bnb-chain/greenfield-storage-provider/pkg/metrics"
 	mwgrpc "github.com/bnb-chain/greenfield-storage-provider/pkg/middleware/grpc"
 	"github.com/bnb-chain/greenfield-storage-provider/service/tasknode/types"
-	servicetype "github.com/bnb-chain/greenfield-storage-provider/service/types"
 	utilgrpc "github.com/bnb-chain/greenfield-storage-provider/util/grpc"
 	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 )
@@ -49,13 +48,4 @@ func (client *TaskNodeClient) Close() error {
 func (client *TaskNodeClient) ReplicateObject(ctx context.Context, object *storagetypes.ObjectInfo, opts ...grpc.CallOption) error {
 	_, err := client.taskNode.ReplicateObject(ctx, &types.ReplicateObjectRequest{ObjectInfo: object}, opts...)
 	return err
-}
-
-// QueryReplicatingObject query a replicating object payload information by object id
-func (client *TaskNodeClient) QueryReplicatingObject(ctx context.Context, objectID uint64) (*servicetype.ReplicateSegmentInfo, error) {
-	resp, err := client.taskNode.QueryReplicatingObject(ctx, &types.QueryReplicatingObjectRequest{ObjectId: objectID})
-	if err != nil {
-		return nil, err
-	}
-	return resp.GetReplicateSegmentInfo(), err
 }

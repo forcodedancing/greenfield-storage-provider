@@ -3,13 +3,13 @@ package client
 import (
 	"context"
 
+	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 	"google.golang.org/grpc"
 
 	"github.com/bnb-chain/greenfield-storage-provider/pkg/log"
 	"github.com/bnb-chain/greenfield-storage-provider/pkg/metrics"
 	mwgrpc "github.com/bnb-chain/greenfield-storage-provider/pkg/middleware/grpc"
 	"github.com/bnb-chain/greenfield-storage-provider/service/receiver/types"
-	servicetypes "github.com/bnb-chain/greenfield-storage-provider/service/types"
 	utilgrpc "github.com/bnb-chain/greenfield-storage-provider/util/grpc"
 )
 
@@ -44,21 +44,20 @@ func (client *ReceiverClient) Close() error {
 	return client.conn.Close()
 }
 
-// SyncObject an object payload with object info
-func (client *ReceiverClient) SyncObject(
+// ReplicatePiece replicates a piece data with object info
+func (client *ReceiverClient) ReplicatePiece(
 	ctx context.Context,
-	opts ...grpc.CallOption) (types.ReceiverService_SyncObjectClient, error) {
-	return client.receiver.SyncObject(ctx, opts...)
+	opts ...grpc.CallOption) (types.ReceiverService_ReceivePieceClient, error) {
+	return client.receiver.ReceivePiece(ctx, opts...)
 }
 
-// QuerySyncingObject a syncing object info by object id
-func (client *ReceiverClient) QuerySyncingObject(ctx context.Context, objectID uint64) (*servicetypes.SegmentInfo, error) {
-	req := &types.QuerySyncingObjectRequest{
-		ObjectId: objectID,
-	}
-	resp, err := client.receiver.QuerySyncingObject(ctx, req)
+// DoneReplicate completes a replication of an object payload data
+func (client *ReceiverClient) DoneReplicate(ctx context.Context, object *storagetypes.ObjectInfo, opts ...grpc.CallOption) (
+	[]byte, []byte, error) {
+	rea := &types.DoneReplicateRequest{ObjectInfo: object}
+	resp, err := client.receiver.DoneReplicate(ctx, rea, opts...)
 	if err != nil {
-		return nil, err
+		return []byte{}, []byte{}, err
 	}
-	return resp.GetSegmentInfo(), nil
+	return resp.GetIntegrityHash(), resp.GetSignature(), nil
 }
