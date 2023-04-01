@@ -22,6 +22,10 @@ var (
 	ErrInvalidBucketName = errors.New("invalid bucket name")
 	// ErrUnsupportedMethod defines unsupported method error
 	ErrUnsupportedMethod = errors.New("unsupported method")
+	// ErrDanglingPointer defines the nil pointer error
+	ErrDanglingPointer = errors.New("pointer dangling")
+	//ErrUnsupportedRedundancyType defines the unspported redundancy type error
+	ErrUnsupportedRedundancyType = errors.New("unsupported redundancy type")
 )
 
 // piece store errors
@@ -94,10 +98,14 @@ var (
 
 // task node service error
 var (
-	// ErrSPApprovalNumber defines failed to insufficient SPs' approvals from p2p server
-	ErrSPApprovalNumber = errors.New("failed to get sufficient approvals of SPs from p2p server")
-	// ErrSPNumber defines failed to get insufficient SPs from DB
-	ErrSPNumber = errors.New("failed to get sufficient SPs from DB")
+	// ErrInsufficientApprovalSP defines failed to get sufficient SPs' approvals from p2p server error
+	ErrInsufficientApprovalSP = errors.New("failed to get sufficient approvals of SPs from p2p server")
+	// ErrInsufficientSP defines failed to get insufficient SPs from DB error
+	ErrInsufficientSP = errors.New("failed to get sufficient SPs from DB")
+	// ErrDanglingSP defines the nil SP info pointer error
+	ErrDanglingSP = errors.New("sp pointer sp dangling")
+	// ErrDepletedSP defines no backup SP to pick up error
+	ErrDepletedSP = errors.New("backup storage providers depleted")
 )
 
 // InnerErrorToGRPCError convents inner error to grpc/status error

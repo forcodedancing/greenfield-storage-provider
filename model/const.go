@@ -225,3 +225,13 @@ const (
 	// DefaultMaxListLimit defines maximum number of the list request
 	DefaultMaxListLimit = 1000
 )
+
+// DateType defines the object payload data type
+type DateType int32
+
+const (
+	// SegmentType defines the data type of segment
+	SegmentType DateType = 0
+	// PieceType defines the data type of ec piece
+	PieceType DateType = 1
+)
