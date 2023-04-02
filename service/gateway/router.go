@@ -15,7 +15,7 @@ const (
 	putObjectRouterName            = "PutObject"
 	getObjectRouterName            = "GetObject"
 	challengeRouterName            = "Challenge"
-	syncPieceRouterName            = "SyncPiece"
+	replicatePieceRouterName       = "ReplicatePiece"
 	getUserBucketsRouterName       = "GetUserBuckets"
 	listObjectsByBucketRouterName  = "ListObjectsByBucketName"
 	getBucketReadQuotaRouterName   = "GetBucketReadQuota"
@@ -90,10 +90,14 @@ func (g *Gateway) registerHandler(r *mux.Router) {
 		Name(challengeRouterName).
 		Methods(http.MethodGet).
 		HandlerFunc(g.challengeHandler)
-	// sync piece to receiver
-	r.Path(model.SyncPath).
-		Name(syncPieceRouterName).
+	// replicate piece to receiver
+	r.Path(model.ReplicatePiecePath).
+		Name(replicatePieceRouterName).
 		Methods(http.MethodPut).
-		HandlerFunc(g.syncPieceHandler)
+		HandlerFunc(g.replicatePieceHandler)
+	r.Path(model.GetIntegrityHashPath).
+		Name(replicatePieceRouterName).
+		Methods(http.MethodGet).
+		HandlerFunc(g.getIntegrityHashHandler)
 	r.NotFoundHandler = http.HandlerFunc(g.notFoundHandler)
 }

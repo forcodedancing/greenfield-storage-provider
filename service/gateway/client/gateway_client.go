@@ -94,46 +94,76 @@ func (p *PieceDataReader) Read(buf []byte) (n int, err error) {
 	return 0, io.EOF
 }
 
-// SyncPieceData sync piece data to the target storage-provider.
-func (client *GatewayClient) SyncPieceData(
+// ReplicatePieceData replicates piece data to the target SP.
+func (client *GatewayClient) ReplicatePieceData(
 	objectInfo *types.ObjectInfo,
 	replicaIdx uint32,
-	segmentSize uint32,
+	segmentIdx uint32,
 	approval *p2ptypes.GetApprovalResponse,
-	pieceData [][]byte) (integrityHash []byte, signature []byte, err error) {
-	pieceDataReader, err := NewPieceDataReader(pieceData)
+	checksum []byte,
+	pieceData []byte) error {
+	var data [][]byte
+	data = append(data, pieceData)
+	pieceDataReader, err := NewPieceDataReader(data)
 	if err != nil {
 		log.Errorw("failed to sync piece data due to new piece data reader error", "error", err)
-		return nil, nil, err
+		return err
 	}
-	req, err := http.NewRequest(http.MethodPut, client.address+model.SyncPath, pieceDataReader)
+	req, err := http.NewRequest(http.MethodPut, client.address+model.ReplicatePiecePath, pieceDataReader)
 	if err != nil {
 		log.Errorw("failed to sync piece data due to new request error", "error", err)
-		return nil, nil, err
+		return err
 	}
 	marshalObjectInfo := hex.EncodeToString(types.ModuleCdc.MustMarshalJSON(objectInfo))
 	marshalApproval, err := json.Marshal(approval)
 	if err != nil {
 		log.Errorw("failed to proto marshal approval", "error", err)
-		return
+		return err
 	}
+
+	// TODO:: add S3 signature, the field be signed include: objectInfo, segmentIdx, replicateIdx, checksum
 	req.Header.Add(model.GnfdObjectInfoHeader, marshalObjectInfo)
+	req.Header.Add(model.GnfdSegmentIdxHeader, util.Uint32ToString(segmentIdx))
 	req.Header.Add(model.GnfdReplicaIdxHeader, util.Uint32ToString(replicaIdx))
-	req.Header.Add(model.GnfdSegmentSizeHeader, util.Uint32ToString(segmentSize))
 	req.Header.Add(model.GnfdReplicateApproval, string(marshalApproval))
+	req.Header.Add(model.GnfdReplicateDataChecksum, string(checksum))
 	req.Header.Add(model.ContentTypeHeader, model.OctetStream)
 
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
 		log.Errorw("failed to sync piece data to other sp", "sp_endpoint", client.address, "error", err)
-		return nil, nil, err
+		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		log.Errorw("failed to sync piece data", "status_code", resp.StatusCode, "sp_endpoint", client.address)
-		return nil, nil, fmt.Errorf("failed to sync piece")
+		return fmt.Errorf("failed to sync piece")
+	}
+	return nil
+}
+
+// GetReplicateIntegrityHash returns the integrity hash of the replication and signature.
+func (client *GatewayClient) GetReplicateIntegrityHash(objectInfo *types.ObjectInfo) (integrityHash []byte, signature []byte, err error) {
+	req, err := http.NewRequest(http.MethodGet, client.address+model.GetIntegrityHashPath, nil)
+	if err != nil {
+		log.Errorw("failed to get replicate integrity hash due to new request error", "error", err)
+		return nil, nil, err
 	}
 
+	marshalObjectInfo := hex.EncodeToString(types.ModuleCdc.MustMarshalJSON(objectInfo))
+	// TODO:: add S3 signature, the field be signed include: objectInfo
+	req.Header.Add(model.GnfdObjectInfoHeader, marshalObjectInfo)
+
+	resp, err := client.httpClient.Do(req)
+	if err != nil {
+		log.Errorw("failed to get replicate integrity hash", "sp_endpoint", client.address, "error", err)
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Errorw("failed to get replicate integrity hash", "status_code", resp.StatusCode, "sp_endpoint", client.address)
+		return nil, nil, fmt.Errorf("get replicate integrity hash")
+	}
 	integrityHash, err = hex.DecodeString(resp.Header.Get(model.GnfdIntegrityHashHeader))
 	if err != nil {
 		log.Errorw("failed to parse integrity hash header",

@@ -166,8 +166,10 @@ const (
 	EndTimestampUs = "end-timestamp"
 	// ChallengePath defines challenge path style suffix
 	ChallengePath = "/greenfield/admin/v1/challenge"
-	// SyncPath defines sync-object path style
-	SyncPath = "/greenfield/receiver/v1/sync-piece"
+	// ReplicatePiecePath defines replicate-piece path style
+	ReplicatePiecePath = "/greenfield/receiver/v1/receive-piece"
+	// GetIntegrityHashPath defines get-integrity-hash path style
+	GetIntegrityHashPath = "/greenfield/receiver/v1/get-integrity-hash"
 	// GnfdRequestIDHeader defines trace-id, trace request in sp
 	GnfdRequestIDHeader = "X-Gnfd-Request-ID"
 	// GnfdTransactionHashHeader defines blockchain tx-hash
@@ -192,10 +194,12 @@ const (
 	GnfdObjectInfoHeader = "X-Gnfd-Object-Info"
 	// GnfdReplicaIdxHeader defines replica idx, which is used by receiver
 	GnfdReplicaIdxHeader = "X-Gnfd-Replica-Idx"
-	// GnfdSegmentSizeHeader defines segment size, which is used by receiver
-	GnfdSegmentSizeHeader = "X-Gnfd-Segment-Size"
+	// GnfdSegmentIdxHeader defines segment idx, which is used by receiver
+	GnfdSegmentIdxHeader = "X-Gnfd-Segment-Idx"
 	// GnfdReplicateApproval defines SP approval that allow to replicate piece data, which is used by receiver
 	GnfdReplicateApproval = "X-Gnfd-Replica-Approval"
+	// GnfdReplicateDataChecksum defines the replicate data checksum,  which is used by receiver
+	GnfdReplicateDataChecksum = "X-Gnfd-Replicate-Data-Checksum"
 	// GnfdIntegrityHashSignatureHeader defines integrity hash signature, which is used by receiver
 	GnfdIntegrityHashSignatureHeader = "X-Gnfd-Integrity-Hash-Signature"
 	// GnfdUserAddressHeader defines the user address

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/bnb-chain/greenfield-common/go/hash"
 	"github.com/bnb-chain/greenfield-common/go/redundancy"
 	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -110,7 +111,7 @@ func (taskNode *TaskNode) asyncReplicateObject(ctx *ReplicateContext) {
 		// async to load and encode segment
 		go taskNode.loadAndEncodeSegment(ctx)
 		for msg := range ctx.WaitReplicateMsg() {
-			for _, replicateIdx := range msg.replicates {
+			for i, replicateIdx := range msg.replicates {
 				// skip the failed replication, wait to try again
 				if ctx.HasRetryReplicate(replicateIdx) {
 					continue
@@ -121,9 +122,9 @@ func (taskNode *TaskNode) asyncReplicateObject(ctx *ReplicateContext) {
 					log.CtxErrorw(ctx.logger, "failed to get approval sp", "replicate_idx", replicateIdx, "error", err)
 					return
 				}
-				// TODO:: gateway send data piece by piece
-				//err = sp.Gateway().SyncPieceData(ctx.GetObject(), replicateIdx, sp.Approval(), msg.data[i])
-				// regardless of success or failure, resources need to be released
+				checksum := hash.GenerateChecksum(msg.data[i])
+				err = sp.Gateway().ReplicatePieceData(ctx.GetObject(), replicateIdx,
+					msg.segment, sp.Approval(), checksum, msg.data[i])
 				ctx.ReleasePieceResource(msg.segment, 1)
 				if err != nil {
 					log.CtxErrorw(ctx.logger, "failed to replicate object to sp",
@@ -253,20 +254,13 @@ func (taskNode *TaskNode) signSealObjectMsg(ctx *ReplicateContext) {
 			ctx.TerminateReplicate(err)
 			return
 		}
-		// TODO:: call gateway DoneReplicate method return the integrityHash, signature, err
-		// param: object
-		var integrityHash []byte
-		var signature []byte
+		integrityHash, signature, err := approval.Gateway().GetReplicateIntegrityHash(ctx.GetObject())
 		if err != nil {
 			return
 		}
-		// debug log
-		{
-			integrityHashStr, _ := hex.DecodeString(string(integrityHash))
-			signatureStr, _ := hex.DecodeString(string(signature))
-			log.CtxDebugw(ctx.logger, "receive the sp response", "replica_idx", rIdx, "domain",
-				approval.SP().GetEndpoint(), "integrity_hash", integrityHashStr, "signature", signatureStr)
-		}
+		log.CtxDebugw(ctx.logger, "receive the sp response", "replica_idx", rIdx, "domain", approval.SP().GetEndpoint(),
+			"integrity_hash", hex.EncodeToString(integrityHash), "signature", hex.EncodeToString(signature))
+
 		// verify the signature
 		msg := storagetypes.NewSecondarySpSignDoc(approval.SP().GetOperator(),
 			sdkmath.NewUint(ctx.GetObject().Id.Uint64()), integrityHash).GetSignBytes()
