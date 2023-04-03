@@ -49,7 +49,7 @@ jobs:
 
       - name: Push image
         env:
-          TAG_NAME: metadata-dev-env-fix-3
+          TAG_NAME: metadata-dev-env-fix-4
         run: |
           docker tag $IMAGE_NAME $IMAGE_NAME:metadata-dev-env-latest
           docker tag $IMAGE_NAME $IMAGE_NAME:$TAG_NAME
