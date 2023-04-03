@@ -96,4 +96,30 @@ func (g *Gateway) registerHandler(r *mux.Router) {
 		Methods(http.MethodPut).
 		HandlerFunc(g.syncPieceHandler)
 	r.NotFoundHandler = http.HandlerFunc(g.notFoundHandler)
+	// TODO Barry Delete this path
+	r.Name("getPaymentByBucketName").
+		Methods(http.MethodGet).
+		Path("/payment/buckets_name/{bucket:.+}/{is_full_list:.+}").
+		HandlerFunc(g.getPaymentByBucketNameHandler)
+	r.Name("getPaymentByBucketID").
+		Methods(http.MethodGet).
+		Path("/payment/buckets_id/{bucket:.+}/{is_full_list:.+}").
+		HandlerFunc(g.getPaymentByBucketIDHandler)
+	r.Name("getUserBucketsCountRouterName").
+		Methods(http.MethodGet).
+		Path("/accounts/{account_id:.+}/buckets/count").
+		HandlerFunc(g.getUserBucketsCountHandler)
+	r.Name("getBucketByBucketNameRouterName").
+		Methods(http.MethodGet).
+		Path("/buckets/name/{bucket_name:.+}/{is_full_list:.+}").
+		HandlerFunc(g.getBucketByBucketNameHandler)
+	//TODO barry remove all sp internal handlers
+	r.Name("getBucketByBucketIDRouterName").
+		Methods(http.MethodGet).
+		Path("/buckets/id/{bucket_id:.+}/{is_full_list:.+}").
+		HandlerFunc(g.getBucketByBucketIDHandler)
+	r.Name("listDeletedObjectsByBlockNumberRangeRouterName").
+		Methods(http.MethodGet).
+		Path("/delete/{start:.+}/{end:.+}/{is_full_list:.+}").
+		HandlerFunc(g.listDeletedObjectsByBlockNumberRangeHandler)
 }
