@@ -95,7 +95,6 @@ func (g *Gateway) registerHandler(r *mux.Router) {
 		Name(syncPieceRouterName).
 		Methods(http.MethodPut).
 		HandlerFunc(g.syncPieceHandler)
-	r.NotFoundHandler = http.HandlerFunc(g.notFoundHandler)
 	// TODO Barry Delete this path
 	r.Name("getPaymentByBucketName").
 		Methods(http.MethodGet).
@@ -122,4 +121,5 @@ func (g *Gateway) registerHandler(r *mux.Router) {
 		Methods(http.MethodGet).
 		Path("/delete/{start:.+}/{end:.+}/{is_full_list:.+}").
 		HandlerFunc(g.listDeletedObjectsByBlockNumberRangeHandler)
+	r.NotFoundHandler = http.HandlerFunc(g.notFoundHandler)
 }
