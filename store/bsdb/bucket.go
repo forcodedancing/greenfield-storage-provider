@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/bnb-chain/greenfield/x/storage/types"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/forbole/juno/v4/common"
 	"gorm.io/gorm"
 )
 

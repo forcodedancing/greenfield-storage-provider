@@ -55,10 +55,10 @@ var DefaultStorageProviderConfig = &StorageProviderConfig{
 		model.ChallengeService,
 		model.TaskNodeService,
 		model.ReceiverService,
-		model.SignerService,
+		//model.SignerService,
 		model.MetadataService,
 		model.ManagerService,
-		model.P2PService,
+		//model.P2PService,
 	},
 	ListenAddress: map[string]string{
 		model.GatewayService:    model.GatewayHTTPAddress,
@@ -72,7 +72,7 @@ var DefaultStorageProviderConfig = &StorageProviderConfig{
 		model.P2PService:        model.P2PGRPCAddress,
 	},
 	Endpoint: map[string]string{
-		model.GatewayService:    "gnfd.nodereal.com",
+		model.GatewayService:    "localhost:9033",
 		model.UploaderService:   model.UploaderGRPCAddress,
 		model.DownloaderService: model.DownloaderGRPCAddress,
 		model.ChallengeService:  model.ChallengeGRPCAddress,

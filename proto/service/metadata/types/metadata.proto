@@ -3,6 +3,8 @@ package service.metadata.types;
 
 import "greenfield/storage/types.proto";
 import "greenfield/payment/stream_record.proto";
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
 
 option go_package = "github.com/bnb-chain/greenfield-storage-provider/metadata/types";
 
@@ -22,6 +24,36 @@ message Object {
   string locked_balance = 2;
   // removed defines the object is deleted or not
   bool removed = 3;
+}
+
+// ActionType defines the operations you can execute in greenfield storage network
+enum ActionType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  ACTION_UNSPECIFIED = 0;
+  ACTION_UPDATE_BUCKET_INFO = 1;
+  ACTION_DELETE_BUCKET = 2;
+
+  ACTION_CREATE_OBJECT = 3;
+  ACTION_DELETE_OBJECT = 4;
+  ACTION_COPY_OBJECT = 5;
+  ACTION_GET_OBJECT = 6;
+  ACTION_EXECUTE_OBJECT = 7;
+  ACTION_LIST_OBJECT = 8;
+
+  ACTION_UPDATE_GROUP_MEMBER = 9;
+  ACTION_DELETE_GROUP = 10;
+
+  ACTION_TYPE_ALL = 99;
+}
+
+// Effect define the effect of the operation permission, include Allow or deny
+enum Effect {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  EFFECT_UNSPECIFIED = 0;
+  EFFECT_ALLOW = 1;
+  EFFECT_DENY = 2;
 }
 
 // GetUserBucketsRequest is request type for the GetUserBuckets RPC method.
@@ -86,6 +118,17 @@ message GetPaymentByBucketIDRequest {
   int64 bucket_id = 1;
   // is_full_list indicates whether this request can get the private buckets information
   bool is_full_list = 2;
+}
+
+message QueryVerifyPermissionRequest {
+  string operator = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string bucket_name = 2;
+  string object_name = 3;
+  ActionType action_type = 4;
+}
+
+message QueryVerifyPermissionResponse {
+  Effect effect = 1;
 }
 
 // GetUserBucketsResponse is response type for the GetUserBuckets RPC method.
@@ -156,4 +199,6 @@ service MetadataService {
   rpc GetPaymentByBucketName(GetPaymentByBucketNameRequest) returns (GetPaymentByBucketNameResponse) {};
   // GetPaymentByBucketID get bucket payment info by a bucket id
   rpc GetPaymentByBucketID(GetPaymentByBucketIDRequest) returns (GetPaymentByBucketIDResponse) {};
+  // VerifyPermission Verify the input items permission.
+  rpc VerifyPermission(QueryVerifyPermissionRequest) returns (QueryVerifyPermissionResponse) {};
 }
