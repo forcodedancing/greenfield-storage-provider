@@ -43,7 +43,7 @@ func (metadata *Metadata) VerifyPermission(ctx context.Context, req *storagetype
 
 	bucketInfo, err = metadata.bsDB.GetBucketByName(req.BucketName, true)
 	if err != nil || bucketInfo == nil {
-		log.CtxErrorw(ctx, "no such bucket", "error", err)
+		log.CtxErrorw(ctx, "failed to get bucket info", "error", err)
 		return nil, types.ErrNoSuchBucket
 	}
 
@@ -55,13 +55,9 @@ func (metadata *Metadata) VerifyPermission(ctx context.Context, req *storagetype
 		}
 	} else {
 		objectInfo, err = metadata.bsDB.GetObjectInfo(req.BucketName, req.ObjectName)
-		if err != nil {
+		if err != nil || objectInfo == nil {
 			log.CtxErrorw(ctx, "failed to get object info", "error", err)
 			return nil, err
-		}
-		if objectInfo == nil {
-			log.CtxErrorw(ctx, "no such object", "error", err)
-			return nil, types.ErrNoSuchObject
 		}
 		effect = metadata.VerifyObjectPermission(ctx, bucketInfo, objectInfo, operator, req.ActionType)
 	}
@@ -183,15 +179,10 @@ func (metadata *Metadata) VerifyPolicy(ctx context.Context, resourceID math.Uint
 	}
 
 	if permission != nil {
-		// statements TODO refactor the below if statements
 		accountPolicyID = append(accountPolicyID, permission.PolicyID)
 		statements, err = metadata.bsDB.GetStatementsByPolicyID(accountPolicyID)
-		if err != nil {
+		if err != nil || statements == nil {
 			log.CtxErrorw(ctx, "failed to get statements by policy id", "error", err)
-			return permtypes.EFFECT_DENY, err
-		}
-		if statements == nil {
-			log.CtxError(ctx, "failed to get statements by policy id  due to the statements list is empty")
 			return permtypes.EFFECT_DENY, err
 		}
 		effect = permission.Eval(action, time.Now(), opts, statements)
@@ -202,12 +193,8 @@ func (metadata *Metadata) VerifyPolicy(ctx context.Context, resourceID math.Uint
 
 	// verify policy which grant permission to group
 	permissions, err = metadata.bsDB.GetPermissionsByResourceAndPrincipleType(resourceType.String(), resourceID.String(), permtypes.PRINCIPAL_TYPE_GNFD_GROUP.String())
-	if err != nil {
+	if err != nil || permissions == nil {
 		log.CtxErrorw(ctx, "failed to get permission by resource and principle type", "error", err)
-		return permtypes.EFFECT_DENY, err
-	}
-	if permissions == nil {
-		log.CtxError(ctx, "failed to get permission by resource and principle type due to the permissions list is empty")
 		return permtypes.EFFECT_DENY, err
 	}
 
@@ -219,12 +206,8 @@ func (metadata *Metadata) VerifyPolicy(ctx context.Context, resourceID math.Uint
 	// filter group id by account
 	// TODO it might cause common.HexToHash(operator.String()) parse error
 	groups, err = metadata.bsDB.GetGroupsByGroupIDAndAccount(groupIDList, common.HexToHash(operator.String()))
-	if err != nil {
+	if err != nil || groups == nil {
 		log.CtxErrorw(ctx, "failed to get groups by group id and account", "error", err)
-		return permtypes.EFFECT_DENY, err
-	}
-	if groups == nil {
-		log.CtxError(ctx, "failed to get groups by group id and account due to the group list is empty")
 		return permtypes.EFFECT_DENY, err
 	}
 
@@ -242,15 +225,10 @@ func (metadata *Metadata) VerifyPolicy(ctx context.Context, resourceID math.Uint
 
 	// statements
 	statements, err = metadata.bsDB.GetStatementsByPolicyID(policyIDList)
-	if err != nil {
+	if err != nil || statements == nil {
 		log.CtxErrorw(ctx, "failed to get statements by policy id", "error", err)
 		return permtypes.EFFECT_DENY, err
 	}
-	if statements == nil {
-		log.CtxError(ctx, "failed to get statements by policy id  due to the statements list is empty")
-		return permtypes.EFFECT_DENY, err
-	}
-
 	for _, perm := range filteredPermissionList {
 		effect = perm.Eval(action, time.Now(), opts, statements)
 		if effect != permtypes.EFFECT_UNSPECIFIED {
