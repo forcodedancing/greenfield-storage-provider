@@ -21,6 +21,8 @@ type Permission struct {
 	CreateTimestamp int64 `gorm:"create_timestamp"`
 	// UpdateTimestamp defines the update time of permission
 	UpdateTimestamp int64 `gorm:"update_timestamp"`
+	// ExpirationTime defines the expiration time of permission
+	ExpirationTime int64 `gorm:"expiration_time;type:bigint(64)"`
 	// Removed defines the permission is deleted or not
 	Removed bool `gorm:"removed"`
 }

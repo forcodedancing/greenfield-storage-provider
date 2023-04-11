@@ -2,13 +2,15 @@ package bsdb
 
 import (
 	"errors"
+	"time"
 
+	permtypes "github.com/bnb-chain/greenfield/x/permission/types"
 	"github.com/forbole/juno/v4/common"
 	"gorm.io/gorm"
 )
 
-// GetPolicyByResourceAndPrincipal get policy by resource type & ID, principal type & value
-func (b *BsDBImpl) GetPolicyByResourceAndPrincipal(resourceType, resourceID, principalType, principalValue string) (*Permission, error) {
+// GetPermissionByResourceAndPrincipal get permission by resource type & ID, principal type & value
+func (b *BsDBImpl) GetPermissionByResourceAndPrincipal(resourceType, resourceID, principalType, principalValue string) (*Permission, error) {
 	var (
 		permission *Permission
 		err        error
@@ -50,4 +52,36 @@ func (b *BsDBImpl) GetPermissionsByResourceAndPrincipleType(resourceType, resour
 		Where("resource_type = ? and resource_id = ? and principal_type = ?", resourceType, resourceID, principalType).
 		Find(&permissions).Error
 	return permissions, err
+}
+
+// Eval is used to evaluate the execution results of permission policies.
+func (p Permission) Eval(action permtypes.ActionType, blockTime time.Time, opts *permtypes.VerifyOptions, statements []*Statement) permtypes.Effect {
+	var (
+		allowed bool
+		e       permtypes.Effect
+	)
+
+	// 1. the policy is expired, need delete
+	if p.ExpirationTime == 0 && time.Unix(p.ExpirationTime, 0).Before(blockTime) {
+		// Notice: We do not actively delete policies that expire for users.
+		return permtypes.EFFECT_UNSPECIFIED
+	}
+
+	// 2. check all the statements
+	for _, s := range statements {
+		if s.ExpirationTime == 0 && time.Unix(s.ExpirationTime, 0).Before(blockTime) {
+			continue
+		}
+		e = s.Eval(action, opts)
+		if e == permtypes.EFFECT_DENY {
+			return permtypes.EFFECT_DENY
+		} else if e == permtypes.EFFECT_ALLOW {
+			allowed = true
+		}
+	}
+
+	if allowed {
+		return permtypes.EFFECT_ALLOW
+	}
+	return permtypes.EFFECT_UNSPECIFIED
 }

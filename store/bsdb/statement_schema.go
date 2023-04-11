@@ -1,6 +1,9 @@
 package bsdb
 
-import "github.com/forbole/juno/v4/common"
+import (
+	"github.com/forbole/juno/v4/common"
+	"github.com/lib/pq"
+)
 
 type Statement struct {
 	// ID defines db auto_increment id of statement
@@ -16,11 +19,11 @@ type Statement struct {
 	// If no sub-resource is specified in a statement, then all objects in the bucket are accessible by the principal.
 	// However, if the sub-resource is defined as 'bucket/test_*,' in the statement, then only objects with a 'test_'
 	// prefix can be accessed by the principal.
-	Resources string `gorm:"resources"`
+	Resources pq.StringArray `gorm:"resources"`
 	// ExpirationTime defines how long the permission is valid. If not explicitly specified, it means it will not expire.
 	ExpirationTime int64 `gorm:"expiration_time"`
 	// LimitSize defines the total data size that is allowed to operate. If not explicitly specified, it means it will not limit.
-	LimitSize int64 `gorm:"limit_size"`
+	LimitSize uint64 `gorm:"limit_size"`
 	// Removed defines the permission is deleted or not
 	Removed bool `gorm:"removed"`
 }

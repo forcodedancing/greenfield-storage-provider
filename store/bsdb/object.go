@@ -43,8 +43,8 @@ func (b *BsDBImpl) ListDeletedObjectsByBlockNumberRange(startBlockNumber int64, 
 	return objects, err
 }
 
-// GetObjectByObjectAndBucketName get object info by an object and a bucket name
-func (b *BsDBImpl) GetObjectByObjectAndBucketName(objectName string, bucketName string) (*Object, error) {
+// GetObjectInfo get object info by an object and a bucket name
+func (b *BsDBImpl) GetObjectInfo(objectName string, bucketName string) (*Object, error) {
 	var (
 		object *Object
 		err    error
