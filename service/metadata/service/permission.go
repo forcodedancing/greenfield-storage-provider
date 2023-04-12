@@ -10,11 +10,11 @@ import (
 	gnfdresource "github.com/bnb-chain/greenfield/types/resource"
 	permtypes "github.com/bnb-chain/greenfield/x/permission/types"
 	"github.com/bnb-chain/greenfield/x/storage/keeper"
-	"github.com/bnb-chain/greenfield/x/storage/types"
 	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/forbole/juno/v4/common"
 
+	"github.com/bnb-chain/greenfield-storage-provider/model/errors"
 	"github.com/bnb-chain/greenfield-storage-provider/pkg/log"
 	"github.com/bnb-chain/greenfield-storage-provider/store/bsdb"
 )
@@ -30,6 +30,11 @@ func (metadata *Metadata) VerifyPermission(ctx context.Context, req *storagetype
 
 	ctx = log.Context(ctx, req)
 
+	if req == nil {
+		log.CtxErrorw(ctx, "invalid request", "error", err)
+		return nil, errors.ErrInvalidParams
+	}
+
 	operator, err = sdk.AccAddressFromHexUnsafe(req.Operator)
 	if err != nil {
 		log.CtxErrorw(ctx, "failed to creates an AccAddress from a HEX-encoded string", "error", err)
@@ -38,13 +43,13 @@ func (metadata *Metadata) VerifyPermission(ctx context.Context, req *storagetype
 
 	if req.BucketName == "" {
 		log.Errorw("failed to check bucket name", "bucket_name", req.BucketName, "error", err)
-		return nil, err
+		return nil, errors.ErrInvalidBucketName
 	}
 
 	bucketInfo, err = metadata.bsDB.GetBucketByName(req.BucketName, true)
 	if err != nil || bucketInfo == nil {
 		log.CtxErrorw(ctx, "failed to get bucket info", "error", err)
-		return nil, types.ErrNoSuchBucket
+		return nil, errors.ErrNoSuchBucket
 	}
 
 	if req.ObjectName == "" {
@@ -57,7 +62,7 @@ func (metadata *Metadata) VerifyPermission(ctx context.Context, req *storagetype
 		objectInfo, err = metadata.bsDB.GetObjectInfo(req.BucketName, req.ObjectName)
 		if err != nil || objectInfo == nil {
 			log.CtxErrorw(ctx, "failed to get object info", "error", err)
-			return nil, err
+			return nil, errors.ErrNoSuchObject
 		}
 		effect = metadata.VerifyObjectPermission(ctx, bucketInfo, objectInfo, operator, req.ActionType)
 	}
@@ -75,13 +80,19 @@ func (metadata *Metadata) VerifyPermission(ctx context.Context, req *storagetype
 //  2. If it is evaluated as "deny" or "unspecified", return "deny".
 func (metadata *Metadata) VerifyBucketPermission(ctx context.Context, bucketInfo *bsdb.Bucket, operator sdk.AccAddress,
 	action permtypes.ActionType, options *permtypes.VerifyOptions) (permtypes.Effect, error) {
+	var (
+		owner  sdk.AccAddress
+		err    error
+		effect permtypes.Effect
+	)
+
 	// if bucket is public, anyone can read but can not write it.
 	if bucketInfo.Visibility == storagetypes.VISIBILITY_TYPE_PUBLIC_READ.String() && keeper.PublicReadBucketAllowedActions[action] {
 		return permtypes.EFFECT_ALLOW, nil
 	}
 
 	// The owner has full permissions
-	owner, err := sdk.AccAddressFromHexUnsafe(bucketInfo.Owner.String())
+	owner, err = sdk.AccAddressFromHexUnsafe(bucketInfo.Owner.String())
 	if err != nil {
 		log.CtxErrorw(ctx, "failed to creates an AccAddress from a HEX-encoded string", "error", err)
 		return permtypes.EFFECT_DENY, err
@@ -92,7 +103,7 @@ func (metadata *Metadata) VerifyBucketPermission(ctx context.Context, bucketInfo
 	}
 
 	// verify policy
-	effect, err := metadata.VerifyPolicy(ctx, math.NewUintFromBigInt(bucketInfo.BucketID.Big()), gnfdresource.RESOURCE_TYPE_BUCKET, operator, action, options)
+	effect, err = metadata.VerifyPolicy(ctx, math.NewUintFromBigInt(bucketInfo.BucketID.Big()), gnfdresource.RESOURCE_TYPE_BUCKET, operator, action, options)
 	if err != nil {
 		log.CtxErrorw(ctx, "failed to verify bucket policy", "error", err)
 		return permtypes.EFFECT_DENY, err
@@ -174,23 +185,20 @@ func (metadata *Metadata) VerifyPolicy(ctx context.Context, resourceID math.Uint
 
 	// verify policy which grant permission to account
 	permission, err = metadata.bsDB.GetPermissionByResourceAndPrincipal(resourceType.String(), resourceID.String(), permtypes.PRINCIPAL_TYPE_GNFD_ACCOUNT.String(), operator.String())
-	if err != nil {
+	if err != nil || permission == nil {
 		return permtypes.EFFECT_DENY, err
 	}
 
-	if permission != nil {
-		accountPolicyID = append(accountPolicyID, permission.PolicyID)
-		statements, err = metadata.bsDB.GetStatementsByPolicyID(accountPolicyID)
-		if err != nil || statements == nil {
-			log.CtxErrorw(ctx, "failed to get statements by policy id", "error", err)
-			return permtypes.EFFECT_DENY, err
-		}
-		effect = permission.Eval(action, time.Now(), opts, statements)
-		if effect != permtypes.EFFECT_UNSPECIFIED {
-			return effect, nil
-		}
+	accountPolicyID = append(accountPolicyID, permission.PolicyID)
+	statements, err = metadata.bsDB.GetStatementsByPolicyID(accountPolicyID)
+	if err != nil || statements == nil {
+		log.CtxErrorw(ctx, "failed to get statements by policy id", "error", err)
+		return permtypes.EFFECT_DENY, err
 	}
-
+	effect = permission.Eval(action, time.Now(), opts, statements)
+	if effect != permtypes.EFFECT_UNSPECIFIED {
+		return effect, nil
+	}
 	// verify policy which grant permission to group
 	permissions, err = metadata.bsDB.GetPermissionsByResourceAndPrincipleType(resourceType.String(), resourceID.String(), permtypes.PRINCIPAL_TYPE_GNFD_GROUP.String())
 	if err != nil || permissions == nil {
@@ -204,7 +212,6 @@ func (metadata *Metadata) VerifyPolicy(ctx context.Context, resourceID math.Uint
 	}
 
 	// filter group id by account
-	// TODO it might cause common.HexToHash(operator.String()) parse error
 	groups, err = metadata.bsDB.GetGroupsByGroupIDAndAccount(groupIDList, common.HexToHash(operator.String()))
 	if err != nil || groups == nil {
 		log.CtxErrorw(ctx, "failed to get groups by group id and account", "error", err)

@@ -95,5 +95,9 @@ func (g *Gateway) registerHandler(r *mux.Router) {
 		Name(syncPieceRouterName).
 		Methods(http.MethodPut).
 		HandlerFunc(g.syncPieceHandler)
+	r.Name("verifyPermission").
+		Methods(http.MethodGet).
+		Path("/verify/{operator:.+}/{bucket:.+}/{object.+}/{action:.+}").
+		HandlerFunc(g.verifyPermission)
 	r.NotFoundHandler = http.HandlerFunc(g.notFoundHandler)
 }

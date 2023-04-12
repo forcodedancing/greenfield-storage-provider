@@ -4,6 +4,8 @@ import (
 	"regexp"
 
 	permtypes "github.com/bnb-chain/greenfield/x/permission/types"
+
+	"github.com/bnb-chain/greenfield-storage-provider/service/metadata"
 )
 
 // Eval is used to evaluate the execution results of statement policies.
@@ -34,8 +36,8 @@ func (s *Statement) Eval(action permtypes.ActionType, opts *permtypes.VerifyOpti
 	}
 
 	actions := make([]permtypes.ActionType, 0)
-	for _, v := range permtypes.ActionType_value {
-		if s.ActionValue&(1<<int(v)) == 1 {
+	for _, v := range metadata.ActionTypeMap {
+		if s.ActionValue&(1<<v) == 1<<v {
 			actions = append(actions, permtypes.ActionType(v))
 		}
 	}
