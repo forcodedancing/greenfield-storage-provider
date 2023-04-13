@@ -12,7 +12,7 @@ import (
 
 // GetPermissionByResourceAndPrincipal get permission by resource type & ID, principal type & value
 func (b *BsDBImpl) GetPermissionByResourceAndPrincipal(resourceType, resourceID, principalType, principalValue string) (*Permission, error) {
-	log.Debugw("GetPermissionByResourceAndPrincipal: resourceType:%s, resourceID: %s  principalType:%s, principalValue: %v", resourceType, resourceID, principalType, principalValue)
+	log.Debugf("GetPermissionByResourceAndPrincipal: resourceType:%s, resourceID: %s  principalType:%s, principalValue: %v", resourceType, resourceID, principalType, principalValue)
 	var (
 		permission *Permission
 		err        error
@@ -30,7 +30,7 @@ func (b *BsDBImpl) GetPermissionByResourceAndPrincipal(resourceType, resourceID,
 
 // GetStatementsByPolicyID get statements info by a policy id
 func (b *BsDBImpl) GetStatementsByPolicyID(policyIDList []common.Hash) ([]*Statement, error) {
-	log.Debugw("GetStatementsByPolicyID: policyIDList:%v", policyIDList)
+	log.Debugf("GetStatementsByPolicyID: policyIDList:%v", policyIDList)
 	var (
 		statements []*Statement
 		err        error

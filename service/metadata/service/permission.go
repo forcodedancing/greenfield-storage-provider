@@ -85,7 +85,7 @@ func (metadata *Metadata) VerifyPermission(ctx context.Context, req *storagetype
 //  2. If it is evaluated as "deny" or "unspecified", return "deny".
 func (metadata *Metadata) VerifyBucketPermission(ctx context.Context, bucketInfo *bsdb.Bucket, operator sdk.AccAddress,
 	action permtypes.ActionType, options *permtypes.VerifyOptions) (permtypes.Effect, error) {
-	log.Debugw("VerifyBucketPermission request: bucketInfo:%v, operator: %s  action:%s, options: %v", bucketInfo, operator.String(), action.String(), options)
+	log.Debugf("VerifyBucketPermission request: bucketInfo:%v, operator: %s  action:%s, options: %v", bucketInfo, operator.String(), action.String(), options)
 	var (
 		owner  sdk.AccAddress
 		err    error
@@ -94,7 +94,7 @@ func (metadata *Metadata) VerifyBucketPermission(ctx context.Context, bucketInfo
 
 	// if bucket is public, anyone can read but can not write it.
 	if bucketInfo.Visibility == storagetypes.VISIBILITY_TYPE_PUBLIC_READ.String() && keeper.PublicReadBucketAllowedActions[action] {
-		log.Debugw("check bucket visibility and public read actions is true")
+		log.Debugf("check bucket visibility and public read actions is true")
 		return permtypes.EFFECT_ALLOW, nil
 	}
 
@@ -106,7 +106,7 @@ func (metadata *Metadata) VerifyBucketPermission(ctx context.Context, bucketInfo
 
 	// The owner has full permissions
 	if operator.Equals(owner) {
-		log.Debugw("The owner has full permissions, operator:%s, owner:%s", operator.String(), owner.String())
+		log.Debugf("The owner has full permissions, operator:%s, owner:%s", operator.String(), owner.String())
 		return permtypes.EFFECT_ALLOW, nil
 	}
 
@@ -182,7 +182,7 @@ func (metadata *Metadata) VerifyObjectPermission(ctx context.Context, bucketInfo
 // VerifyPolicy verify policy of permission
 func (metadata *Metadata) VerifyPolicy(ctx context.Context, resourceID math.Uint, resourceType resource.ResourceType,
 	operator sdk.AccAddress, action permtypes.ActionType, opts *permtypes.VerifyOptions) (permtypes.Effect, error) {
-	log.Debugw("VerifyPolicy request: resourceID:%s, resourceType: %s  operator:%s, action: %v, opts:%v", resourceID.String(), resourceType.String(), operator.String(), action.String(), opts)
+	log.Debugf("VerifyPolicy request: resourceID:%s, resourceType: %s  operator:%s, action: %v, opts:%v", resourceID.String(), resourceType.String(), operator.String(), action.String(), opts)
 	var (
 		err                    error
 		effect                 permtypes.Effect
