@@ -12,7 +12,7 @@ func (s *SpDBImpl) GetAllServiceConfigs() (string, string, error) {
 	queryReturn := &ServiceConfigTable{}
 	result := s.db.Last(&queryReturn)
 	if result.Error != nil {
-		return "", "", fmt.Errorf("failed to query service config table: %s", result.Error)
+		return "", "", fmt.Errorf("failed to query record in service config table: %s", result.Error)
 	}
 	return queryReturn.ConfigVersion, queryReturn.ServiceConfig, nil
 }
@@ -22,7 +22,7 @@ func (s *SpDBImpl) GetAllServiceConfigs() (string, string, error) {
 func (s *SpDBImpl) SetAllServiceConfigs(version, config string) error {
 	configVersion, _, err := s.GetAllServiceConfigs()
 	if err != nil && !strings.Contains(err.Error(), gorm.ErrRecordNotFound.Error()) {
-		return fmt.Errorf("failed to query service config table: %s", err)
+		return fmt.Errorf("failed to query record in service config table: %s", err)
 	}
 
 	newRecord := &ServiceConfigTable{

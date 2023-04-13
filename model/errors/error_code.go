@@ -12,27 +12,65 @@ const (
 )
 
 const (
-	// parse error
-	ParseStrToIntErrCode         = 15000
-	ConvertStrToByteSliceErrCode = 15001
-	// db error
-	UnKnownAddressType                = 19999
-	QueryInSPInfoTableErrCode         = 20000
-	DeleteInSPInfoTableErrCode        = 20001
-	InsertInSPInfoTableErrCode        = 20002
-	QueryOwnSPInSPInfoTableErrCode    = 20003
-	InsertOwnSPInSPInfoTableErrCode   = 20004
-	UpdateOwnSPInSPInfoTableErrCode   = 20005
-	QueryInStorageParamsTableErrCode  = 20006
-	InsertInStorageParamsTableErrCode = 20007
-	UpdateInStorageParamsTableErrCode = 20008
-	QueryInJobTableErrCode            = 20009
-	InsertInJobTableErrCode           = 20010
-	UpdateInJobTableErrCode           = 20011
-	QueryInObjectTableErrCode         = 20012
-	InsertInObjectTableErrCode        = 20013
-	UpdateInObjectTableErrCode        = 20014
-	RecordNotFound                    = 20015
-	QueryInIntegrityMetaTableErrCode  = 20016
-	InsertInIntegrityMetaTableErrCode = 20017
+	// deinfe common error code, from 10000 to 14999
+	MismatchIntegrityHashErrCode    = 11000
+	CacheMissedErrCode              = 11001
+	DanglingPointerErrCode          = 11002
+	PayloadStreamErrCode            = 11003
+	ResourceMgrBeginSpanErrCode     = 11004
+	ComputePieceSizeErrCode         = 11005
+	ResourceMgrReserveMemoryErrCode = 11006
+	ObjectNotFoundErrCode           = 11007
+	HexDecodeStringErrCode          = 11008
+	StringToByteSliceErrCode        = 11009
+	ParseStringToIntErrCode         = 11010
+	// sp database error, from 15000 to 19999
+	DBRecordNotFound                    = 15000
+	DBUnknownAddressTypeErrCode         = 15001
+	DBGetStorageParamsErrCode           = 15100
+	DBGetBucketTrafficErrCode           = 15102
+	DBGetBucketReadRecordErrCode        = 15103
+	DBQuotaNotEnoughErrCode             = 15104
+	DBQueryInBucketTrafficTableErrCode  = 15106
+	DBInsertInBucketTrafficTableErrCode = 15107
+	DBUpdateInBucketTrafficTableErrCode = 15108
+	DBInsertInReadRecordTableErrCode    = 15109
+	DBQueryInSPInfoTableErrCode         = 20000
+	DBDeleteInSPInfoTableErrCode        = 20001
+	DBInsertInSPInfoTableErrCode        = 20002
+	DBQueryOwnSPInSPInfoTableErrCode    = 20003
+	DBInsertOwnSPInSPInfoTableErrCode   = 20004
+	DBUpdateOwnSPInSPInfoTableErrCode   = 20005
+	DBQueryInStorageParamsTableErrCode  = 20006
+	DBInsertInStorageParamsTableErrCode = 20007
+	DBUpdateInStorageParamsTableErrCode = 20008
+	DBQueryInJobTableErrCode            = 20009
+	DBInsertInJobTableErrCode           = 20010
+	DBUpdateInJobTableErrCode           = 20011
+	DBQueryInObjectTableErrCode         = 20012
+	DBInsertInObjectTableErrCode        = 20013
+	DBUpdateInObjectTableErrCode        = 20014
+	DBQueryInIntegrityMetaTableErrCode  = 20016
+	DBInsertInIntegrityMetaTableErrCode = 20017
+
+	// uploader service error, from 20000 to 20999
+	UploaderMismatchChecksumNumErrCode = 20100
+
+	// challenge service error, from 21000 to 21999
+
+	// downloader service error, from 22000 to 22999
+	DownloaderInvalidPieceInfoParamsErrCode = 22100
+
+	// signer service error, from 23000 to 23999
+	SignerSignIntegrityHashErrCode = 23100
+
+	// p2p service, from 24000 to 24999
+
+	// receiver service error code, from 25000 to 25999
+
+	// task node service error, from 26000 to 26999
+
+	// piece store error code, from 27000 to 27999
+	PieceStorePutObjectError = 27100
+	PieceStoreGetObjectError = 27101
 )

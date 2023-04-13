@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 
+	errorstypes "github.com/bnb-chain/greenfield-storage-provider/pkg/errors/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -116,14 +117,19 @@ var (
 	ErrMismatchChecksumNum = errors.New("checksum number mismatch")
 )
 
+// downloader service error
+var (
+	ErrInvalidPieceInfoParams = errors.New("invalid piece info params")
+)
+
 // InnerErrorToGRPCError convents inner error to grpc/status error
 func InnerErrorToGRPCError(err error) error {
 	if errors.Is(err, gorm.ErrRecordNotFound) ||
 		errors.Is(err, ErrNoSuchObject) {
-		return status.Errorf(codes.NotFound, "Object is not found")
+		return errorstypes.Error(ObjectNotFoundErrCode, "object is not found")
 	}
 	if errors.Is(err, ErrCheckQuotaEnough) {
-		return status.Errorf(codes.PermissionDenied, "Quota is not enough")
+		return status.Errorf(codes.PermissionDenied, "quota is not enough")
 	}
 	return err
 }
