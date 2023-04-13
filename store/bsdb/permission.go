@@ -2,6 +2,7 @@ package bsdb
 
 import (
 	"errors"
+	"github.com/bnb-chain/greenfield-storage-provider/pkg/log"
 	"time"
 
 	permtypes "github.com/bnb-chain/greenfield/x/permission/types"
@@ -11,6 +12,7 @@ import (
 
 // GetPermissionByResourceAndPrincipal get permission by resource type & ID, principal type & value
 func (b *BsDBImpl) GetPermissionByResourceAndPrincipal(resourceType, resourceID, principalType, principalValue string) (*Permission, error) {
+	log.Debugw("GetPermissionByResourceAndPrincipal: resourceType:%s, resourceID: %s  principalType:%s, principalValue: %v", resourceType, resourceID, principalType, principalValue)
 	var (
 		permission *Permission
 		err        error
@@ -28,6 +30,7 @@ func (b *BsDBImpl) GetPermissionByResourceAndPrincipal(resourceType, resourceID,
 
 // GetStatementsByPolicyID get statements info by a policy id
 func (b *BsDBImpl) GetStatementsByPolicyID(policyIDList []common.Hash) ([]*Statement, error) {
+	log.Debugw("GetStatementsByPolicyID: policyIDList:%v", policyIDList)
 	var (
 		statements []*Statement
 		err        error
@@ -56,6 +59,7 @@ func (b *BsDBImpl) GetPermissionsByResourceAndPrincipleType(resourceType, resour
 
 // Eval is used to evaluate the execution results of permission policies.
 func (p Permission) Eval(action permtypes.ActionType, blockTime time.Time, opts *permtypes.VerifyOptions, statements []*Statement) permtypes.Effect {
+	log.Debugf("Permission Eval: action:%s, blockTime: %s  opts:%v", action.String(), blockTime.String(), opts)
 	var (
 		allowed bool
 		e       permtypes.Effect
@@ -73,6 +77,7 @@ func (p Permission) Eval(action permtypes.ActionType, blockTime time.Time, opts 
 			continue
 		}
 		e = s.Eval(action, opts)
+		log.Debugf("Statement Eval Result: effect:%s", e.String())
 		if e == permtypes.EFFECT_DENY {
 			return permtypes.EFFECT_DENY
 		} else if e == permtypes.EFFECT_ALLOW {

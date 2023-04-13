@@ -1,6 +1,7 @@
 package bsdb
 
 import (
+	"github.com/bnb-chain/greenfield-storage-provider/pkg/log"
 	"regexp"
 
 	permtypes "github.com/bnb-chain/greenfield/x/permission/types"
@@ -10,6 +11,7 @@ import (
 
 // Eval is used to evaluate the execution results of statement policies.
 func (s *Statement) Eval(action permtypes.ActionType, opts *permtypes.VerifyOptions) permtypes.Effect {
+	log.Debugf("Statement Eval: action:%s, opts:%v", action.String(), opts)
 	// If 'resource' is not nil, it implies that the user intends to access a sub-resource, which would
 	// be specified in 's.Resources'. Therefore, if the sub-resource in the statement is nil, we will ignore this statement.
 	if opts != nil && opts.Resource != "" && s.Resources == nil {
@@ -41,6 +43,7 @@ func (s *Statement) Eval(action permtypes.ActionType, opts *permtypes.VerifyOpti
 			actions = append(actions, permtypes.ActionType(v))
 		}
 	}
+	log.Debugf("Statement Eval actions bitmap: action:%v, ActionValue:%d", actions, s.ActionValue)
 
 	for _, act := range actions {
 		if act == action || act == permtypes.ACTION_TYPE_ALL {

@@ -2,6 +2,7 @@ package bsdb
 
 import (
 	"errors"
+	"github.com/bnb-chain/greenfield-storage-provider/pkg/log"
 	"strconv"
 
 	"github.com/bnb-chain/greenfield/x/storage/types"
@@ -26,6 +27,7 @@ func (b *BsDBImpl) GetUserBuckets(accountID common.Address) ([]*Bucket, error) {
 
 // GetBucketByName get buckets info by a bucket name
 func (b *BsDBImpl) GetBucketByName(bucketName string, isFullList bool) (*Bucket, error) {
+	log.Debugf("GetBucketByName sql: bucketName:%s, isFullList: %t", bucketName, isFullList)
 	var (
 		bucket *Bucket
 		err    error
@@ -34,15 +36,19 @@ func (b *BsDBImpl) GetBucketByName(bucketName string, isFullList bool) (*Bucket,
 	if isFullList {
 		err = b.db.Take(&bucket, "bucket_name = ?", bucketName).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Debugf("GetBucketByName not found return nil,nil")
 			return nil, nil
 		}
-		return bucket, nil
+		log.Debugf("GetBucketByName return bucket:%v, err: %v", bucket, err)
+		return bucket, err
 	}
 
 	err = b.db.Take(&bucket, "bucket_name = ? and visibility = ?", bucketName, types.VISIBILITY_TYPE_PUBLIC_READ.String()).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Debugf("GetBucketByName not found return nil,nil")
 		return nil, nil
 	}
+	log.Debugf("GetBucketByName return bucket:%v, err: %v", bucket, err)
 	return bucket, err
 }
 
