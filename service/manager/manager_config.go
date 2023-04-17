@@ -10,4 +10,6 @@ type ManagerConfig struct {
 	SpOperatorAddress string
 	ChainConfig       *gnfd.GreenfieldChainConfig
 	SpDBConfig        *config.SQLDBConfig
+
+	UploadNumber int
 }

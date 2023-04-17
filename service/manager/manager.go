@@ -16,8 +16,10 @@ import (
 var _ lifecycle.Service = &Manager{}
 
 var (
-	// RefreshSPInfoAndStorageParamsTimer define the period of refresh sp info and storage params
+	// RefreshSPInfoAndStorageParamsTimer defines the period of refresh sp info and storage params
 	RefreshSPInfoAndStorageParamsTimer = 5 * 60
+	// GCManagerPriorityQueueTimer defines the period of gc manager priority queue
+	GCManagerPriorityQueueTimer = 60
 )
 
 // Manager module is responsible for implementing internal management functions.
@@ -25,6 +27,7 @@ var (
 // TODO::support gc and configuration management, etc.
 type Manager struct {
 	config  *ManagerConfig
+	pqueue  *MPQueue
 	running atomic.Value
 	stopCh  chan struct{}
 	chain   *gnfd.Greenfield
@@ -40,6 +43,7 @@ func NewManagerService(cfg *ManagerConfig) (*Manager, error) {
 
 	manager = &Manager{
 		config: cfg,
+		pqueue: NewMPQueue(),
 		stopCh: make(chan struct{}),
 	}
 	if manager.chain, err = gnfd.NewGreenfield(cfg.ChainConfig); err != nil {
@@ -74,10 +78,13 @@ func (m *Manager) Start(ctx context.Context) error {
 func (m *Manager) eventLoop() {
 	m.refreshSPInfoAndStorageParams()
 	refreshSPInfoAndStorageParamsTicker := time.NewTicker(time.Duration(RefreshSPInfoAndStorageParamsTimer) * time.Second)
+	gcPriorityQueueTicker := time.NewTicker(time.Duration(GCManagerPriorityQueueTimer) * time.Second)
 	for {
 		select {
 		case <-refreshSPInfoAndStorageParamsTicker.C:
 			go m.refreshSPInfoAndStorageParams()
+		case <-gcPriorityQueueTicker.C:
+			go m.pqueue.GCTask()
 		case <-m.stopCh:
 			return
 		}

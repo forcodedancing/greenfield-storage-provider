@@ -108,6 +108,16 @@ var (
 	ErrExhaustedSP = errors.New("backup storage providers exhausted")
 )
 
+// manager service error
+var (
+	// ErrUnsupportedTaskType defines the unsupported task type error
+	ErrUnsupportedTaskType = errors.New("task type unsupported")
+	// ErrDanglingTaskPointer defines the task pointer dangling error
+	ErrDanglingTaskPointer = errors.New("task pointer dangling")
+	// ErrUnsupportedDispatchTaskType defines the unsupported dispatch task type error
+	ErrUnsupportedDispatchTaskType = errors.New("task type unsupported dispatch")
+)
+
 // uploader service error
 var (
 	// ErrMismatchIntegrityHash defines integrity hash mismatch error
