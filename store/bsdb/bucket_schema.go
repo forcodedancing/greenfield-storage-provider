@@ -9,9 +9,7 @@ type Bucket struct {
 	// ID defines db auto_increment id of bucket
 	ID uint64 `gorm:"id"`
 	// Owner is the account address of bucket creator, it is also the bucket owner.
-	Owner common.Address `gorm:"column:owner"`
-	// Operator defines the operator address of bucket
-	Operator common.Address `gorm:"column:operator"`
+	Owner common.Address `gorm:"column:owner_address"`
 	// BucketName is a globally unique name of bucket
 	BucketName string `gorm:"bucket_name"`
 	// Visibility defines the highest permissions for bucket. When a bucket is public, everyone can get storage obj

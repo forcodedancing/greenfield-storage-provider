@@ -10,11 +10,9 @@ type Object struct {
 	// ID defines db auto_increment id of object
 	ID uint64 `gorm:"id"`
 	// Creator defines the account address of object creator
-	Creator common.Address `gorm:"creator"`
-	// Operator defines the operator address of object
-	Operator common.Address `gorm:"column:operator"`
+	Creator common.Address `gorm:"creator_address"`
 	// Owner defines the account address of object owner
-	Owner common.Address `gorm:"column:owner"`
+	Owner common.Address `gorm:"owner_address"`
 	// BucketName is the name of the bucket
 	BucketName string `gorm:"bucket_name"`
 	// ObjectName is the name of object
