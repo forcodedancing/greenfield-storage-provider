@@ -3,6 +3,7 @@ package service.metadata.types;
 
 import "greenfield/storage/types.proto";
 import "greenfield/payment/stream_record.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/bnb-chain/greenfield-storage-provider/metadata/types";
 
@@ -12,6 +13,22 @@ message Bucket {
   bnbchain.greenfield.storage.BucketInfo bucket_info = 1;
   // removed defines the bucket is deleted or not
   bool removed = 2;
+  // delete_at defines the block number when the bucket deleted.
+  int64 delete_at = 3;
+  // delete_reason defines the deleted reason of bucket
+  string delete_reason = 4;
+  // bucket_status define the status of the bucket.
+  BucketStatus bucket_status = 5;
+}
+
+// BucketStatus represents the status of a bucket. After a user successfully
+// sends a CreateBucket transaction onto the chain, the status is set to 'Created'.
+// When a Discontinue Object transaction is received on chain, the status is set to 'Discontinued'.
+enum BucketStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  BUCKET_STATUS_CREATED = 0;
+  BUCKET_STATUS_DISCONTINUED = 1;
 }
 
 // Object is the structure for user object
@@ -24,6 +41,10 @@ message Object {
   bool removed = 3;
   // update_at defines the block number when the object updated
   int64 update_at = 4;
+  // delete_at defines the block number when the object deleted
+  int64 delete_at = 5;
+  // delete_reason defines the deleted reason of object
+  string delete_reason = 6;
 }
 
 // GetUserBucketsRequest is request type for the GetUserBuckets RPC method.

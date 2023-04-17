@@ -41,7 +41,10 @@ func (metadata *Metadata) GetUserBuckets(ctx context.Context, req *metatypes.Get
 					SecondarySpObjectsSize: nil,
 				},
 			},
-			Removed: bucket.Removed,
+			Removed:      bucket.Removed,
+			DeleteAt:     bucket.DeleteAt,
+			DeleteReason: bucket.DeleteReason,
+			BucketStatus: metatypes.BucketStatus(metatypes.BucketStatus_value[bucket.Status]),
 		})
 	}
 	resp = &metatypes.GetUserBucketsResponse{Buckets: res}
@@ -81,7 +84,10 @@ func (metadata *Metadata) GetBucketByBucketName(ctx context.Context, req *metaty
 				ChargedReadQuota: bucket.ChargedReadQuota,
 				Visibility:       types.VisibilityType(types.VisibilityType_value[bucket.Visibility]),
 			},
-			Removed: bucket.Removed,
+			Removed:      bucket.Removed,
+			DeleteAt:     bucket.DeleteAt,
+			DeleteReason: bucket.DeleteReason,
+			BucketStatus: metatypes.BucketStatus(metatypes.BucketStatus_value[bucket.Status]),
 		}
 	}
 	resp = &metatypes.GetBucketByBucketNameResponse{Bucket: res}
@@ -116,7 +122,10 @@ func (metadata *Metadata) GetBucketByBucketID(ctx context.Context, req *metatype
 				ChargedReadQuota: bucket.ChargedReadQuota,
 				Visibility:       types.VisibilityType(types.VisibilityType_value[bucket.Visibility]),
 			},
-			Removed: bucket.Removed,
+			Removed:      bucket.Removed,
+			DeleteAt:     bucket.DeleteAt,
+			DeleteReason: bucket.DeleteReason,
+			BucketStatus: metatypes.BucketStatus(metatypes.BucketStatus_value[bucket.Status]),
 		}
 	}
 	resp = &metatypes.GetBucketByBucketIDResponse{Bucket: res}
